@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Include Tailwind CSS and custom styles here -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generative AI with Speech Synthesis</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    @keyframes speak {
+      0%, 100% { transform: scaleY(1); }
+      50% { transform: scaleY(0.3); }
+    }
+
+    .speaking-bar:nth-child(1) {
+      animation: speak 0.5s infinite;
+    }
+    .speaking-bar:nth-child(2) {
+      animation: speak 0.5s infinite 0.1s;
+    }
+    .speaking-bar:nth-child(3) {
+      animation: speak 0.5s infinite 0.2s;
+    }
+    .speaking-bar:nth-child(4) {
+      animation: speak 0.5s infinite 0.3s;
+    }
+    .speaking-bar:nth-child(5) {
+      animation: speak 0.5s infinite 0.4s;
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-purple-200">
+  <div class="text-center">
+    <input id="questionInput" type="text" class="px-4 py-2 border rounded mb-4" placeholder="Type your question here" required />
+    <button id="generateBtn" class="px-4 py-2 font-bold text-white bg-red-500 rounded hover:bg-red-700">
+      Ask Question
+    </button>
+    <div id="speakingAnimation" class="mt-6 items-center justify-center flex space-x-1 hidden">
+      <div class="speaking-bar w-4 h-16 bg-blue-500"></div>
+      <div class="speaking-bar w-4 h-16 bg-blue-500"></div>
+      <div class="speaking-bar w-4 h-16 bg-blue-500"></div>
+      <div class="speaking-bar w-4 h-16 bg-blue-500"></div>
+      <div class="speaking-bar w-4 h-16 bg-blue-500"></div>
+    </div>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "@google/generative-ai": "https://esm.run/@google/generative-ai"
+      }
+    }
+  </script>
+  <script type="module">
+    import { GoogleGenerativeAI } from "@google/generative-ai";
+
+    document.getElementById('generateBtn').addEventListener('click', async () => {
+
+      // Get the user's question
+      const userQuestion = document.getElementById('questionInput').value;
+
+
+      // Show speaking animation
+      const speakingAnimation = document.getElementById('speakingAnimation');
+
+      // Access your API key (see "Set up your API key" above)
+      const genAI = new GoogleGenerativeAI('AIzaSyASbqb2-XhVlfD233l8MuIelV_tFX4q4QE');
+
+      try {
+        // The Gemini 1.5 models are versatile and work with both text-only and multimodal prompts
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        const prompt = userQuestion;
+
+        const result = await model.generateContent(prompt);
+        const response = result.response;
+
+        if (!response) {
+          throw new Error("No response generated.");
+        }
+
+        let text = await response.text();
+
+        if (!text) {
+          throw new Error("Generated text is empty.");
+        }
+
+        // Remove * from the generated text
+        text = text.replace(/\*/g, '');
+
+        console.log(text);
+
+        // Make the response speak
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.onstart = () => {
+          // Show speaking animation when speech starts
+          speakingAnimation.classList.remove('hidden');
+        };
+        utterance.onend = () => {
+          // Hide speaking animation when speech ends
+          speakingAnimation.classList.add('hidden');
+        };
+        window.speechSynthesis.speak(utterance);
+      } catch (error) {
+        console.error("Error generating or speaking the content:", error);
+        // Hide speaking animation in case of error
+        speakingAnimation.classList.add('hidden');
+        alert("An error occurred: " + error.message);
+      }
+    });
+  </script>
+</body>
+</html>
